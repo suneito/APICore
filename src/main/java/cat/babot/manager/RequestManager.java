@@ -60,11 +60,11 @@ public class RequestManager {
     }
 
     //DELETE
-    public APIResponse deleteRequest(String endpoint) {
+    public APIResponse delete(String endpoint) {
         return apiRequestContext.delete(endpoint);
     }
 
-    public APIResponse deleteRequest(String endpoint, RequestOptions options) {
+    public APIResponse delete(String endpoint, RequestOptions options) {
         return apiRequestContext.delete(endpoint, options);
     }
 
