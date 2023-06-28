@@ -1,22 +1,32 @@
 package cat.babot.data.utilities;
 
+import cat.babot.data.elements.Comment;
+import cat.babot.data.elements.Post;
+import cat.babot.data.elements.Todo;
+import cat.babot.data.elements.User;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Constants {
     public enum Element {
-        POST("posts/"),
-        USER("users/"),
-        TODO("todos/"),
-        COMMENT("comments/");
+        POST("posts/", Post.class),
+        USER("users/", User.class),
+        TODO("todos/", Todo.class),
+        COMMENT("comments/", Comment.class);
 
-        final String value;
+        private final String route;
+        private final Class<?> associatedClass;
 
-        Element(String element) {
-            value = element;
+        Element(String route, Class<?> associatedClass) {
+            this.route = route;
+            this.associatedClass = associatedClass;
         }
 
         @Override public String toString() {
-            return value;
+            return route;
+        }
+
+        public Class<?> getAssociatedClass() {
+            return associatedClass;
         }
     }
 

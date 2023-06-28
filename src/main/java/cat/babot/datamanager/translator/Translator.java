@@ -1,4 +1,4 @@
-package cat.babot.data.translator;
+package cat.babot.datamanager.translator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
