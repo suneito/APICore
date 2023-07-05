@@ -4,97 +4,125 @@ import cat.babot.data.elements.Comment;
 import cat.babot.data.elements.Post;
 import cat.babot.data.elements.Todo;
 import cat.babot.data.elements.User;
-import cat.babot.data.translator.Translator;
+import cat.babot.datamanager.translator.Translator;
 import cat.babot.data.utilities.Constants.Element;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.options.RequestOptions;
 import org.junit.jupiter.api.Test;
 
+import java.net.HttpURLConnection;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ApiTests extends BaseTest {
+public class ApiTests extends BaseCalls {
     @Test
-    public void testGetAPI() {
-        //TODO implement loger, methods high layer
-        APIResponse response;
-        response = find(Element.USER, "3250300");
-        System.out.println(response.text());
-        System.out.println(response.url());
-        assertEquals(response.status(), 200);
+    public void testE1() {
+//        Crea usuari
+        User userARC = callCreate(Element.USER, null, new User().getCreationParams());
+//        Crea post
+        Post postARC = callCreate(Element.POST, userARC.getId(), new Post().getCreationParams());
+//        Crea comentari fail
+        callFailCreate(Element.COMMENT, "1234", new Comment().getCreationParams());
+//        Crea comentari
+        Comment commentARC = callCreate(Element.COMMENT, postARC.getId(), new Comment().getCreationParams());
+//        Modifica comentari
+        Comment commentTBC = callUpdate(Element.COMMENT, commentARC.getId(), new Comment().getCreationParams());
+        assertEquals(commentARC.getId(), commentTBC.getId());
+//        Cerca comentari
+        Comment commentTBF = callFind(Element.COMMENT, commentARC.getId());
+        assertEquals(commentTBC.toString(), commentTBF.toString());
+//        Elimina comentari
+        callDelete(Element.COMMENT, commentARC.getId());
+//        Cerca comentari fail
+        callFailFind(Element.COMMENT, commentARC.getId());
+    }
 
-        response = find(Element.TODO, "18665");
-        System.out.println(response.text());
-        System.out.println(response.url());
-        assertEquals(response.status(), 200);
 
-        response = find(Element.POST, "47415");
-        System.out.println(response.text());
-        System.out.println(response.url());
-        assertEquals(response.status(), 200);
+    @Test
+    public void testE2() {
+//        Cerca usuari fail
+        callFailFind(Element.COMMENT, "1234");
+//        Crea usuari
+        User userARC = callCreate(Element.USER, null, new User().getCreationParams());
+//        Crea post
+        callFailCreate(Element.POST, "1234", new Post().getCreationParams());
+//        Crea post
+        Post postARC = callCreate(Element.POST, userARC.getId(), new Post().getCreationParams());
+//        Modifica post
+        Post postTBC = callUpdate(Element.POST, postARC.getId(), new Post().getCreationParams());
+        assertEquals(postARC.getId(), postTBC.getId());
+//        Cerca post
+        callFind(Element.POST, postTBC.getId());
+        assertEquals(postARC.getId(), postTBC.getId());
+//        Crea comentari
+        Comment commentARC = callCreate(Element.COMMENT, postARC.getId(), new Comment().getCreationParams());
+//        Elimina post
+        callDelete(Element.POST, postTBC.getId());
+//        Cerca comentari
+        callFailFind(Element.COMMENT, commentARC.getId());
+//        Cerca post
+        callFailFind(Element.POST, postTBC.getId());
 
-        response = find(Element.COMMENT, "42373");
-        System.out.println(response.text());
-        System.out.println(response.url());
-        assertEquals(response.status(), 200);
+    }
 
-        response = create(Element.USER, null, new User().getCreationParams());
-        System.out.println(response.text());
-        User user = new Translator().jsonToObject(response.text(), User.class);
-        System.out.println(user.toString());
-        assertEquals(response.status(), 201);
+    @Test
+    public void testE3() {
+//        Crea usuari
+        callFailCreate(Element.USER, null, new Post().getCreationParams());
+//        Crea usuari
+        User userARC = callCreate(Element.USER, null, new User().getCreationParams());
+//        Crea toddo
+        callFailCreate(Element.TODO, "1234", new Todo().getCreationParams());
+//        Crea toddo
+        Todo todoARC = callCreate(Element.TODO, userARC.getId(), new Todo().getCreationParams());
+//        Modifica toddo
+        Todo todoTBC = callUpdate(Element.TODO, todoARC.getId(), new Todo().getCreationParams());
+        assertEquals(todoTBC.getId(), todoARC.getId());
+//        Cerca toddo
+        callFind(Element.TODO, todoTBC.getId());
+//        Elimina toddo
+        callDelete(Element.TODO, todoTBC.getId());
+//        Cerca toddo
+        callFailFind(Element.TODO, todoTBC.getId());
+//        Elimina usuari
+        callDelete(Element.USER, userARC.getId());
+//        Cerca usuari
+        callFailFind(Element.USER, userARC.getId());
 
-        response = create(Element.POST, user.getId(), new Post().getCreationParams());
-        System.out.println(response.text());
-        Post post = new Translator().jsonToObject(response.text(), Post.class);
-        System.out.println(post.toString());
-        assertEquals(response.status(), 201);
 
-        response = create(Element.TODO, user.getId(), new Todo().getCreationParams());
-        System.out.println(response.text());
-        Todo todo = new Translator().jsonToObject(response.text(), Todo.class);
-        System.out.println(todo.toString());
-        assertEquals(response.status(), 201);
+    }
 
-        response = create(Element.COMMENT, post.getId(), new Comment().getCreationParams());
-        System.out.println(response.text());
-        Comment comment = new Translator().jsonToObject(response.text(), Comment.class);
-        System.out.println(comment.toString());
-        assertEquals(response.status(), 201);
 
-        response = update(Element.USER, user.getId(), new User().getCreationParams());
-        System.out.println(response.text());
-        User userUpdated = new Translator().jsonToObject(response.text(), User.class);
-        System.out.println(user.toString());
-        System.out.println(userUpdated.toString());
-        assertEquals(response.status(), 200);
+    private void callFailCreate(Element element, String id, RequestOptions params) {
+        APIResponse response = create(element, id, params);
+        assertEquals(response.status(), 422);
+    }
 
-        response = delete(Element.USER, user.getId());
-        System.out.println(response.text());
+    private  <T> T callCreate(Element element, String id, RequestOptions params) {
+        APIResponse response = create(element, id, params);
+        assertEquals(response.status(), HttpURLConnection.HTTP_CREATED);
+        return (T) new Translator().jsonToObject(response.text(), element.getAssociatedClass());
+    }
+
+    private <T> T callUpdate(Element element, String id, RequestOptions params) {
+        APIResponse response = update(element, id, params);
+        assertEquals(response.status(), HttpURLConnection.HTTP_OK);
+        return (T) new Translator().jsonToObject(response.text(), element.getAssociatedClass());
+    }
+
+    private <T> T callFind(Element element, String id) {
+        APIResponse response = find(element, id);
+        assertEquals(response.status(), HttpURLConnection.HTTP_OK);
+        return (T) new Translator().jsonToObject(response.text(), element.getAssociatedClass());
+    }
+
+    private void callFailFind(Element element, String id) {
+        APIResponse response = find(element, id);
+        assertEquals(response.status(), HttpURLConnection.HTTP_NOT_FOUND);
+    }
+
+    private void callDelete(Element element, String id) {
+        APIResponse response = delete(element, id);
         assertEquals(response.status(), 204);
-
-        response = find(Element.USER, user.getId());
-        System.out.println(response.text());
-        assertEquals(response.status(), 404);
-    }
-    //GET
-    public APIResponse find(Element element, String id) {
-        return manager.get(element.toString().concat(id));
-    }
-
-    //POST
-    public APIResponse create(Element element, String id, RequestOptions params) {
-        if (element.equals(Element.USER)) return manager.post(element.toString(), params);
-        if (element.equals(Element.COMMENT)) return manager.post(Element.POST + id + '/' + element, params);
-        return manager.post(Element.USER + id + '/' + element, params);
-    }
-
-    //PUT
-    public APIResponse update(Element element, String id, RequestOptions params) {
-        return manager.put(element.toString() + id, params);
-    }
-
-    //DELETE
-    public APIResponse delete(Element element, String id) {
-        return manager.delete(element.toString() + id );
     }
 }
